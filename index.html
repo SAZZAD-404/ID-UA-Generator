@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ID & User Agent Generator</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+    --primary: #4361ee;
+    --secondary: #3f37c9;
+    --accent: #4cc9f0;
+    --dark: #1e1e2c;
+    --light: #f8f9fa;
+    --gray: #6c757d;
+    --card-bg: #ffffff;
+    --text-primary: #212529;
+    --text-secondary: #495057;
+    --border-radius: 12px;
+    --box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --transition: all 0.3s ease;
+}
+
+.dark-mode {
+    --primary: #4cc9f0;
+    --secondary: #4895ef;
+    --accent: #4361ee;
+    --dark: #f8f9fa;
+    --light: #1e1e2c;
+    --gray: #adb5bd;
+    --background: #121212;
+    --card-bg: #1e1e2c;
+    --text-primary: #f8f9fa;
+    --text-secondary: #e9ecef;
+    --box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+* {margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
+body {background-color: var(--light); color: var(--text-primary); transition: var(--transition); min-height:100vh; line-height:1.6;}
+header {background-color: var(--card-bg); box-shadow: var(--box-shadow); position: sticky; top:0; z-index:100;}
+.header-content {display:flex; justify-content: space-between; align-items:center; padding:15px;}
+.logo {font-size:24px; font-weight:700; color: var(--primary); display:flex; align-items:center;}
+.logo i {margin-right:10px;}
+nav ul {display:flex; list-style:none;}
+nav ul li {margin-left:25px;}
+nav ul li a {text-decoration:none; color: var(--text-secondary); font-weight:500; transition: var(--transition); padding:8px 15px; border-radius: var(--border-radius);}
+nav ul li a:hover, nav ul li a.active {color: var(--primary); background-color: rgba(67,97,238,0.1);}
+.theme-toggle {background:none; border:none; color: var(--text-secondary); cursor:pointer; font-size:20px; transition: var(--transition);}
+.theme-toggle:hover {color: var(--primary);}
+main {padding:30px;}
+.page {display:none;}
+.page.active {display:block;}
+.generator-container {background-color: var(--card-bg); border-radius: var(--border-radius); padding:25px; box-shadow: var(--box-shadow); margin-bottom:30px;}
+.card {background-color: var(--card-bg); border-radius: var(--border-radius); padding:25px; box-shadow: var(--box-shadow); margin-bottom:20px;}
+.card-title {font-size:22px; margin-bottom:20px; color: var(--primary); display:flex; align-items:center; padding-bottom:10px; border-bottom:2px solid rgba(67,97,238,0.1);}
+.card-title i {margin-right:10px;}
+.identity-grid {display:flex; flex-direction:column; gap:15px; margin-bottom:20px;}
+#useragent .identity-grid {display:grid; grid-template-columns: 1fr 1fr; gap:15px;}
+.field {display:flex; align-items:flex-start; padding:15px; border-radius: var(--border-radius); background: rgba(67,97,238,0.05); cursor:pointer; transition: var(--transition);}
+.field:hover {background: rgba(67,97,238,0.1);}
+.field i {margin-right:15px; color: var(--primary); font-size:20px; width:24px; text-align:center; margin-top:2px;}
+.field-content {flex:1;}
+.field-label {font-size:12px; color: var(--gray); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;}
+.field-value {font-weight:500; color: var(--text-primary); word-break:break-all; font-size:16px;}
+.field select, .field input {width:100%; padding:8px 12px; border-radius: var(--border-radius); border:1px solid #ccc; font-size:16px;}
+.btn {padding:12px 25px; border:none; border-radius: var(--border-radius); font-weight:600; cursor:pointer; transition: var(--transition); display:inline-flex; align-items:center; justify-content:center; font-size:16px; background-color: var(--primary); color:white; margin-top:10px;}
+.btn i {margin-right:8px;}
+.btn:hover {background-color: var(--secondary);}
+.result-container {background-color: var(--card-bg); border-radius: var(--border-radius); padding:25px; box-shadow: var(--box-shadow); margin-top:20px;}
+.result-title {font-size:18px; margin-bottom:15px; color: var(--text-secondary); display:flex; align-items:center;}
+.result-title i {margin-right:10px;}
+.result-content {background-color: rgba(67,97,238,0.05); border-radius: var(--border-radius); padding:15px; margin-bottom:15px; max-height:250px; overflow-y:auto; font-family:monospace; white-space:pre-wrap;}
+.action-buttons {display:flex; gap:10px; margin-top:10px;}
+.action-buttons .btn {flex:1; justify-content:center;}
+footer {background-color: var(--card-bg); padding:20px 0; text-align:center; margin-top:40px; box-shadow: 0 -4px 20px rgba(0,0,0,0.08);}
+.toast {position: fixed; bottom: 20px; left:50%; transform: translateX(-50%); background: var(--card-bg); color: var(--text-primary); padding:12px 25px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); z-index:1000; opacity:0; transition: opacity 0.3s ease;}
+.toast.show {opacity:1;}
+@media (max-width:768px) {nav ul {flex-direction:column; gap:10px;} nav ul li {margin-left:0;} #useragent .identity-grid {grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <div class="logo"><i class="fas fa-fingerprint"></i>ID & UA Generator</div>
+        <nav>
+            <ul>
+                <li><a href="#" class="nav-link active" data-page="identity">USA Identity</a></li>
+                <li><a href="#" class="nav-link" data-page="useragent">User Agent</a></li>
+            </ul>
+        </nav>
+        <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+    </div>
+</header>
+
+<main class="container">
+    <!-- Identity Generator -->
+    <section id="identity" class="page active">
+        <div class="generator-container">
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-id-card"></i> Identity Information</h2>
+                <div class="identity-grid">
+                    <div id="name" class="field" onclick="copyText(this)">
+                        <i class="fas fa-user"></i>
+                        <div class="field-content"><div class="field-label">FULL NAME</div><div class="field-value"></div></div>
+                    </div>
+                    <div id="dob" class="field" onclick="copyText(this)">
+                        <i class="fas fa-calendar"></i>
+                        <div class="field-content"><div class="field-label">DATE OF BIRTH</div><div class="field-value"></div></div>
+                    </div>
+                    <div id="phone" class="field" onclick="copyText(this)">
+                        <i class="fas fa-phone"></i>
+                        <div class="field-content"><div class="field-label">PHONE NUMBER</div><div class="field-value"></div></div>
+                    </div>
+                    <div id="email" class="field" onclick="copyText(this)">
+                        <i class="fas fa-envelope"></i>
+                        <div class="field-content"><div class="field-label">EMAIL ADDRESS</div><div class="field-value"></div></div>
+                    </div>
+                    <div id="address" class="field" onclick="copyText(this)">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div class="field-content"><div class="field-label">FULL ADDRESS</div><div class="field-value"></div></div>
+                    </div>
+                </div>
+                <button class="btn" onclick="generateIdentity()"><i class="fas fa-sync-alt"></i> Generate Random Identity</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- User Agent Generator -->
+    <section id="useragent" class="page">
+        <div class="generator-container">
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-code"></i> User Agent Generator</h2>
+                <div class="identity-grid">
+                    <div class="field">
+                        <i class="fas fa-mobile-alt"></i>
+                        <div class="field-content"><div class="field-label">Device Type</div>
+                            <select class="field-value" id="deviceType">
+                                <option value="random">Random</option>
+                                <option value="android">Android</option>
+                                <option value="ios">iOS</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field">
+                    <i class="fas fa-globe"></i> <!-- Browser icon -->
+                    <div class="field-content">
+                        <div class="field-label">Browser</div>
+                        <select class="field-value" id="browser">
+                            <option value="facebook">Facebook</option>
+                        </select>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <i class="fas fa-hashtag"></i>
+                        <div class="field-content"><div class="field-label">Number of User Agents</div>
+                            <input type="number" class="field-value" id="uaCount" value="5" min="5" max="20">
+                        </div>
+                    </div>
+                </div>
+                <button class="btn" onclick="generateUserAgent()"><i class="fas fa-plus"></i> Generate</button>
+              
+            </div>
+
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-list"></i> Generated User Agents</h2>
+                <div class="result-content" id="userAgentResult">// User Agent will appear here</div>
+                <div class="action-buttons">
+                    <button class="btn" onclick="copyUserAgent()"><i class="fas fa-copy"></i> Copy</button>
+                    <button class="btn btn-success" onclick="saveResult('userAgentResult', 'useragent')">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                    <button class="btn" onclick="clearUserAgent()"><i class="fas fa-trash"></i> Clear</button>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div class="toast" id="toast">Copied to clipboard!</div>
+<footer>
+    <div class="copyright"> <h4>🤖 Create By Sazzad 🤖</h4> </div>
+</footer>
+
+<script>
+// Navigation
+const links = document.querySelectorAll('.nav-link');
+const pages = document.querySelectorAll('.page');
+links.forEach(link => {
+    link.addEventListener('click', e => {
+        e.preventDefault();
+        links.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        const pageId = link.dataset.page;
+        pages.forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+    });
+});
+
+// Theme Toggle
+const themeBtn = document.getElementById('themeToggle');
+themeBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+});
+
+// Toast
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.innerText = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// Copy text
+function copyText(element){
+    const text = element.querySelector('.field-value').innerText;
+    navigator.clipboard.writeText(text).then(()=>showToast('Copied to clipboard!'));
+}
+
+// USA Identity Generator
+const names = ["Hannah Graham","Joseph Richardson","Ethan Martinez","Joshua Russell","Lauren Hall","Brianna Harris","Hunter Carter","Natalie Lee","Eric Russell","Amanda Thompson","Samantha Peterson","Eric Barnes","Abigail Hamilton","Allison Jones","Hunter Cox","Jennifer Scott","Mia Carter","Zoe Richardson","Anthony Martinez","Anna Hamilton","Grace Wilson","Jordan Adams","Ava Peterson","James Graham","Sophia Lee","Isabella Nelson","Tyler Richardson","Jacob Roberts","Audrey Cook","Alexis Walker","Brooklyn King","Megan Rodriguez","Savannah Graham","Sean Adams","Christian James","Patrick Anderson","Rachel Butler","Ryan Gonzales","Elizabeth Walker","Katherine Russell","Dylan Davis","Anthony Parker","Timothy Jackson","Nicholas Perry","Joseph Brooks","Paige Baker","Christian Rivera","Savannah Rogers","Brandon Bell","Jason Gray","Andrew Johnson","Aaron Gray","Aaron Peterson","Elijah Cooper","Nicole Morris","Brandon Collins","Megan Phillips","Elizabeth Morris","Amanda Hayes","Robert Nelson","Joseph Flores","Austin Evans","Lauren Thomas","Sophia Stewart","Nathan Alexander","William Wilson","Natalie Barnes","Adam Walker","Mia Thompson","Claire Campbell","Ava Roberts","Ava Henderson","Isabella Baker","Taylor Edwards","Charles Patterson","Allison Gonzalez","Kyle Foster","Lauren Reed","Eric Kelly","Olivia Johnson","Anthony Collins","Anna Cox","Ethan Hernandez","Mason Baker","Lauren Allen","Megan Diaz","Steven Smith","David Martinez","Noah Thompson","Eric Ramirez","Taylor Hernandez","Brandon Lewis","Leah Butler","Jason Morgan","Dylan Griffin","Ava Bell","Emily Scott","Julia Garcia","Paige Barnes","Ava Brooks","Cameron Sanchez","Jessica Hamilton","Grace Torres","Jonathan Alexander","Abigail Henderson","Sophia Roberts","Brandon Mitchell","Allison Foster","Cameron Young","Steven Cox","Sean Mitchell","Sophia Graham","Alexis Williams","Katherine Howard","Brian Smith","Timothy Phillips","Emma Myers","Aaron Rodriguez","Jason Adams","Brianna Bailey","Steven Walker","Zachary Hamilton","Mia Patterson","Victoria Smith","Eric Wilson","Joshua Coleman","Timothy Howard","Nicole Lewis","Tyler Gonzalez","Noah Powell","Samuel Clark","Steven Myers","Jessica Torres","Joshua Long","Hannah Gonzales","Benjamin King","Thomas Alexander","Michael Ward","Alyssa Bennett","Ashley Cook","Matthew Brown","Tyler Butler","Brandon Davis","Alexis Baker","Brian Edwards","Megan Richardson","Isabella Lewis","Jason Wilson","Christopher Brooks","Ella Ross","Nicholas Ford","Jonathan Rivera","Maya Long","Andrew Lee","Anna Gonzales","Zoe Watson","Kyle Bryant","Maya Bailey","Ashley Diaz","Sophia Jones","Robert Taylor","Christopher Jackson","Cameron Gonzales","William Adams","Anna Miller","Rachel Washington","Jessica Ross","Brian Martin","Brooklyn Lee","Hannah Butler","Sarah Gonzalez","Adam King","Joshua Murphy","Tyler Stewart","Kyle Brown","Olivia Cox","Nicholas Ramirez","Joseph Reed","Matthew Miller","Julia Carter","Logan Brown","Adam Rogers","Audrey Myers","Rachel Turner","Brandon Coleman","Robert Lopez","Thomas Long","Victoria Thompson","Sophia Morris","Claire Morris","Madeline Evans","Jasmine Hamilton","Aaron Johnson","Haley Roberts","Brandon Hall","Kevin Rogers","Jennifer Parker","Jason Cooper","Aaron Alexander","Amanda Ramirez","Patrick Adams","Charles Martin","Claire Rivera","Mia Lewis","Elijah Allen","Hailey Nelson","Charles Lee","Nicholas Price","Mia Jackson","Isabella Simmons","Eric Sanchez","Cameron Sanders","James Reed","Eric Coleman","John Myers","Tyler Torres","Allison Baker","Logan Morris","Ava Garcia","Emma Young","Maya Ramirez","Jasmine Henderson","Alexander Butler","Madison Morris","Connor Perez","Jordan Murphy","Noah Wood","Taylor Howard","Taylor Scott","Joshua Diaz","Sophia Perez","Taylor Butler","Grace Hayes","Thomas Flores","Dylan Martin","Robert Rogers","Samantha Diaz","Nicholas Sanders","Abigail Hughes","Allison Scott","Nicholas Collins","Justin Miller","Maya Phillips","Zoe Howard","Emma Green","Thomas Edwards","Patrick Bennett","Daniel Gray","Robert Long","Jason Rivera","Matthew Rivera","Gabriella Stewart","Paige Perry","Elizabeth Hall","Gabriella Murphy","Aaron Graham","Anthony Cook","Zoe Jones","Elizabeth Russell","Lily Bennett","Chloe King","William James","David Jenkins","Natalie Hamilton","Charles Hamilton","Justin Cook","Rachel Rivera","Matthew Walker","Christopher Thomas","Sophia Hayes","James Taylor","Victoria Mitchell","Nathan Parker","Claire Howard","Aaron Russell","Nicole Jackson","Nicholas Long","Joshua Hall","Sophia Thomas","Lily Anderson","Madison Roberts","Eric Campbell","Jordan Lopez","Eric Davis","Lauren Gonzalez","Megan Rivera","Timothy Jenkins","Grace Howard","Hannah Jenkins","Adam Hughes","Robert Alexander","Jasmine Ford","Cameron Morgan","Brianna Brooks","Emma Russell","James Phillips","Madeline Graham","Christopher Sanders","Alexander Moore","Ethan Butler","Ella Rivera","Lily Bell","Lily Carter","Hunter Martinez","Gabriella Patterson","Lauren Lewis","Grace Parker","Ava Price","Ella Scott","Elizabeth Coleman","Adam Mitchell","David Scott","Katherine Gray","Thomas Perez","Jonathan Gray","Nicole Bailey","Alexander Perry","Jessica Adams","Elizabeth Young","Mia Peterson","Katherine Perez","Katherine Gonzalez","Eric Bell","David Adams","Tyler Long","Jessica Ramirez","Lily Hayes","Aaron Bailey","Nicholas Allen","Jasmine Brown","Isabella Hernandez","Alyssa Martin","Christian Young","David Jackson","Sean Powell","Jasmine Miller","Sophia Barnes","Alyssa Ross","Haley Morris","Haley Torres","Claire Simmons","Cameron Hayes","Olivia Perry","Tyler Moore","Benjamin James","Rachel Nelson","Leah Wood","Andrew Jenkins","Mia Rogers","Elijah Perry","Natalie Morgan","Timothy Richardson","Elizabeth Simmons","Savannah Walker","Jasmine Bailey","Brooklyn Sanchez","Aaron Murphy","Hannah Martin","Chloe Green","Zoe Price","Elizabeth Gonzalez","David Turner","Olivia Davis","Cameron Evans","Zoe Hayes","Adam Flores","Hannah Henderson","Ella White","Zachary Stewart","Haley Rivera","Emily Henderson","Adam Robinson","Anna Martinez","Eric Howard","Brian Perry","Zachary Price","Hailey Hughes","Emily Davis","Emily Hall","Brandon Evans","Robert Moore","Savannah Cox","Caleb Price","Jessica Jenkins","Katherine Lee","Robert Perry","Megan Davis","Benjamin Price","Nicole Adams","Emily Brown","Caleb Bryant","Ashley Powell","Anna Morris","Justin Sanchez","Mason Watson","Kyle Simmons","Aaron Miller","Paige Collins","Natalie Williams","Nicholas Cox","Nathan Lewis","Robert Edwards","Maya Bennett","Taylor Watson","Mason Morris","Benjamin Roberts","Thomas Russell","Katherine Diaz","Timothy Murphy","Brianna Graham","Joseph Green","Chloe Wood","Elizabeth Stewart","William Foster","Nicole Simmons","Eric Hernandez","Hunter Brooks","Cameron Wilson","Hunter Stewart","Daniel Bailey","John Hernandez","Charles Smith","Kayla Myers","Grace Perez","Adam Campbell","Steven Murphy","Amanda Howard","Adam Evans","Jordan Price","Ethan Hall","Hailey James","Michael Hayes","Patrick Bell","Austin Young","Emily Howard","Mason Price","Brooklyn Lewis","Julia Hughes","Anthony Bailey","Lily Rogers","Hailey Rivera","Jennifer Williams","Lily Campbell","Hunter Diaz","Nicholas Miller","Savannah Davis","Claire Ward","Ella Adams","Savannah Barnes","Chloe Stewart","John Brown","Kayla Rodriguez","Haley Bell","Brandon Russell","Daniel Roberts","Maya Taylor","Ethan Kelly","Sophia Hall","Elizabeth Thomas","Robert Flores","Madeline Carter","Elizabeth Clark","Alyssa Collins","Matthew Lopez","Haley Edwards","Eric Martinez","Adam Lewis","Andrew Jones","Sophia Carter","Lily Richardson","Allison Patterson","Timothy Lopez","Connor Carter","Hailey Collins","Audrey Lopez","Claire Bailey","Natalie Parker","Samantha Long","Samuel Torres","Rachel Hughes","Alexis Roberts","Jordan Watson","William Morris","Mason Wilson","Christian Simmons","Mia Alexander","Caleb Russell","Matthew Smith","Gabriella Rivera","Justin Russell","Cameron Coleman","Jasmine Walker","Alexander Carter","Chloe Cox","Eric Baker","Robert Griffin","Kayla Sanders","Steven Parker","Maya Cox","Christian Scott","Jason Hayes","Ethan Lopez","Maya Cooper","Christian Nelson","Daniel Barnes","Victoria Gonzales","Sarah Ford","Grace Patterson","Adam Jackson","Sophia Taylor","Cameron Baker","Cameron Butler","Emily Ross","Sean Bailey","Charles Williams","Zoe Martinez","Nathan Sanders","Lauren Bell","Amanda Collins","Caleb Edwards","Noah Gonzalez","Victoria Sanchez","Mason Sanders","Nathan Davis","Kyle Nelson","Alexis Young","Emma Mitchell","Daniel Clark","Andrew Bryant","Chloe Barnes","Michael Bailey","Patrick Washington","Jennifer Butler","Brooklyn White","William Gonzalez","Taylor Gonzales","Steven Johnson","Kyle Cook","Samantha Scott","Matthew Rogers","Jasmine Davis","Lauren Cooper","Jasmine Murphy","Tyler Phillips","Elizabeth Bryant","David Garcia","Robert Robinson","Steven Gonzales","Ryan Flores","Madeline Davis"];
+const addresses = [
+{ full:"6311 1st Ave, San Jose, CA 95112", zip:"95112" },
+{ full:"9427 Cedar St, Garland, TX 75040", zip:"75040" },
+{ full:"1167 Center St, Jersey City, NJ 07302", zip:"07302" },
+{ full:"6341 Lakeview Dr, Lubbock, TX 79401", zip:"79401" },
+{ full:"8753 Franklin St, Fremont, CA 94538", zip:"94538" },
+{ full:"2049 Elm St, Denver, CO 80220", zip:"80220" },
+{ full:"4821 Maple Ave, Orlando, FL 32803", zip:"32803" },
+{ full:"3156 Pine Ln, Dallas, TX 75214", zip:"75214" },
+{ full:"7912 Oak St, Seattle, WA 98115", zip:"98115" },
+{ full:"1503 Birch Rd, Miami, FL 33133", zip:"33133" },
+{ full:"9274 Cedarwood Dr, Phoenix, AZ 85022", zip:"85022" },
+{ full:"4301 Walnut St, Chicago, IL 60611", zip:"60611" },
+{ full:"2147 Spruce St, Boston, MA 02118", zip:"02118" },
+{ full:"3678 Hickory Ln, Portland, OR 97213", zip:"97213" },
+{ full:"5901 Ash Dr, Houston, TX 77036", zip:"77036" },
+{ full:"7812 Willow St, Las Vegas, NV 89103", zip:"89103" },
+{ full:"3489 Poplar Ave, Atlanta, GA 30329", zip:"30329" },
+{ full:"4920 Magnolia St, Philadelphia, PA 19103", zip:"19103" },
+{ full:"6128 Cherry Ln, Charlotte, NC 28205", zip:"28205" },
+{ full:"8295 Cypress Rd, San Diego, CA 92122", zip:"92122" },
+{ full:"1307 Redwood St, Minneapolis, MN 55403", zip:"55403" },
+{ full:"5742 Dogwood Dr, Tampa, FL 33647", zip:"33647" },
+{ full:"9036 Palm St, Sacramento, CA 95823", zip:"95823" },
+{ full:"2761 Fir Ln, Kansas City, MO 64133", zip:"64133" },
+{ full:"8459 Linden St, Indianapolis, IN 46220", zip:"46220" },
+{ full:"1392 Juniper Rd, Raleigh, NC 27604", zip:"27604" },
+{ full:"4605 Olive St, Jacksonville, FL 32207", zip:"32207" },
+{ full:"7321 Hickory St, Nashville, TN 37211", zip:"37211" },
+{ full:"9284 Pine St, Albuquerque, NM 87110", zip:"87110" },
+{ full:"3652 Cedar Dr, Milwaukee, WI 53212", zip:"53212" },
+{ full:"4813 Maple St, Columbus, OH 43215", zip:"43215" },
+{ full:"7204 Birch Ln, Louisville, KY 40219", zip:"40219" },
+{ full:"1547 Walnut St, Memphis, TN 38104", zip:"38104" },
+{ full:"8329 Elm Dr, Oklahoma City, OK 73120", zip:"73120" },
+{ full:"2901 Oak Ln, Louisville, KY 40216", zip:"40216" },
+{ full:"6094 Pine St, Portland, OR 97209", zip:"97209" },
+{ full:"4751 Cedar St, St. Louis, MO 63116", zip:"63116" },
+{ full:"3412 Maple Ln, Minneapolis, MN 55416", zip:"55416" },
+{ full:"8129 Oak St, Orlando, FL 32808", zip:"32808" },
+{ full:"2593 Birch Dr, Fort Worth, TX 76109", zip:"76109" },
+{ full:"9047 Elm St, San Antonio, TX 78229", zip:"78229" },
+{ full:"3758 Pine Rd, Chicago, IL 60623", zip:"60623" },
+{ full:"6432 Cedar Ln, Detroit, MI 48221", zip:"48221" },
+{ full:"2105 Maple St, Houston, TX 77018", zip:"77018" },
+{ full:"5389 Oak Dr, Los Angeles, CA 90064", zip:"90064" },
+{ full:"8271 Birch St, Seattle, WA 98109", zip:"98109" },
+{ full:"4628 Elm Ln, San Jose, CA 95128", zip:"95128" },
+{ full:"3194 Pine St, Dallas, TX 75243", zip:"75243" },
+{ full:"7842 Cedar Ave, New York, NY 10022", zip:"10022" },
+{ full:"5961 Maple St, Miami, FL 33137", zip:"33137" },
+{ full:"4308 Oak Ln, Philadelphia, PA 19124", zip:"19124" },
+{ full:"2189 Birch St, Charlotte, NC 28212", zip:"28212" },
+{ full:"9035 Elm Rd, Phoenix, AZ 85032", zip:"85032" },
+{ full:"4782 Pine St, Denver, CO 80238", zip:"80238" },
+{ full:"6214 Cedar St, San Diego, CA 92127", zip:"92127" },
+{ full:"3571 Maple Ln, Boston, MA 02127", zip:"02127" },
+{ full:"7984 Oak St, Atlanta, GA 30349", zip:"30349" },
+{ full:"2469 Birch St, Sacramento, CA 95828", zip:"95828" },
+{ full:"5193 Pine Ln, Tampa, FL 33615", zip:"33615" },
+{ full:"8320 Cedar St, Indianapolis, IN 46226", zip:"46226" },
+{ full:"1734 Maple Dr, Kansas City, MO 64134", zip:"64134" },
+{ full:"6049 Oak Ln, Columbus, OH 43227", zip:"43227" },
+{ full:"9318 Birch St, St. Louis, MO 63136", zip:"63136" },
+{ full:"4826 Elm St, Minneapolis, MN 55432", zip:"55432" },
+{ full:"3654 Pine St, Louisville, KY 40222", zip:"40222" },
+{ full:"7915 Cedar Ln, Memphis, TN 38116", zip:"38116" },
+{ full:"2481 Maple St, Oklahoma City, OK 73130", zip:"73130" },
+{ full:"6097 Oak Ln, Fort Worth, TX 76132", zip:"76132" },
+{ full:"3102 Birch St, Chicago, IL 60641", zip:"60641" },
+{ full:"7845 Elm Ln, Detroit, MI 48235", zip:"48235" },
+{ full:"2368 Pine St, Houston, TX 77032", zip:"77032" },
+{ full:"5192 Cedar Ln, Los Angeles, CA 90049", zip:"90049" },
+{ full:"8316 Maple St, Seattle, WA 98117", zip:"98117" },
+{ full:"4725 Oak Ln, San Jose, CA 95138", zip:"95138" },
+{ full:"3608 Birch St, Dallas, TX 75250", zip:"75250" },
+{ full:"7981 Pine Ln, New York, NY 10032", zip:"10032" },
+{ full:"2456 Cedar St, Miami, FL 33152", zip:"33152" },
+{ full:"6023 Maple Ln, Philadelphia, PA 19142", zip:"19142" },
+{ full:"9317 Oak St, Charlotte, NC 28262", zip:"28262" },
+{ full:"4728 Birch Ln, Phoenix, AZ 85050", zip:"85050" },
+{ full:"3659 Pine St, Denver, CO 80242", zip:"80242" },
+{ full:"8104 Cedar St, San Diego, CA 92137", zip:"92137" },
+{ full:"2473 Maple Ln, Boston, MA 02137", zip:"02137" },
+{ full:"5349 Oak St, Atlanta, GA 30354", zip:"30354" },
+{ full:"8912 Birch Ln, Sacramento, CA 95834", zip:"95834" },
+{ full:"4361 Pine St, Tampa, FL 33625", zip:"33625" },
+{ full:"7823 Cedar Ln, Indianapolis, IN 46234", zip:"46234" },
+{ full:"3514 Maple St, Kansas City, MO 64138", zip:"64138" },
+{ full:"9056 Oak Ln, Columbus, OH 43232", zip:"43232" },
+{ full:"4681 Birch St, St. Louis, MO 63138", zip:"63138" },
+{ full:"3627 Elm Ln, Minneapolis, MN 55437", zip:"55437" },
+{ full:"7942 Pine St, Louisville, KY 40229", zip:"40229" },
+{ full:"2518 Cedar Ln, Memphis, TN 38118", zip:"38118" },
+{ full:"6045 Maple St, Oklahoma City, OK 73135", zip:"73135" },
+{ full:"9312 Oak Ln, Fort Worth, TX 76135", zip:"76135" },
+{ full:"4843 Birch St, Chicago, IL 60656", zip:"60656" },
+{ full:"3674 Elm Ln, Detroit, MI 48239", zip:"48239" },
+{ full:"8105 Pine St, Houston, TX 77036", zip:"77036" },
+{ full:"2437 Cedar Ln, Los Angeles, CA 90056", zip:"90056" },
+{ full:"6014 Maple St, Seattle, WA 98127", zip:"98127" },
+{ full:"9372 Oak Ln, San Jose, CA 95148", zip:"95148" }
+];
+
+function randomDOB() {
+    const year=Math.floor(Math.random()*(1985-1970+1))+1970;
+    const month=String(Math.floor(Math.random()*12)+1).padStart(2,'0');
+    const day=String(Math.floor(Math.random()*28)+1).padStart(2,'0');
+    return `${month}/${day}/${year}`;
+}
+
+function randomPhone(){
+    const areaCode=Math.floor(Math.random()*(999-200)+200);
+    const prefix=Math.floor(Math.random()*(999-200)+200);
+    const line=Math.floor(Math.random()*9000)+1000;
+    return `${areaCode}${prefix}${line}`;
+}
+
+function generateIdentity(){
+    const fullName=names[Math.floor(Math.random()*names.length)];
+    const phone=randomPhone();
+    const dob=randomDOB();
+    const email=`${fullName.toLowerCase().replace(" ",".")}${Math.floor(Math.random()*299)}@gmail.com`;
+    const address=addresses[Math.floor(Math.random()*addresses.length)].full;
+    document.querySelector("#name .field-value").innerText=fullName;
+    document.querySelector("#phone .field-value").innerText=phone;
+    document.querySelector("#dob .field-value").innerText=dob;
+    document.querySelector("#email .field-value").innerText=email;
+    document.querySelector("#address .field-value").innerText=address;
+    showToast('New identity generated!');
+}
+
+// User Agent Generator
+function generateUserAgent(){
+    const deviceType = document.getElementById('deviceType').value;
+    const browserType = document.getElementById('browser').value;
+    const count = parseInt(document.getElementById('uaCount').value);
+    const agents = [];
+    for(let i=0; i<count; i++){
+        agents.push(randomUA(deviceType, browserType));
+    }
+    // Join with single line break, no extra gap
+    document.getElementById('userAgentResult').innerText = agents.join('\n');
+}
+
+
+function randomUA(deviceType){
+    // Android Devices + Versions
+    const androidDevices = device_models = [
+    {"model": "SM-S721U", "version": "14"},
+    {"model": "SM-A546U", "version": "13"},
+    {"model": "SM-A156U", "version": "14"},
+    {"model": "SM-S928U", "version": "14"},
+    {"model": "SM-G991U", "version": "14"},
+    {"model": "SM-S916U", "version": "14"},
+    {"model": "SM-S711U", "version": "13"},
+    {"model": "SM-A356U", "version": "14"},
+    {"model": "SM-S918U", "version": "13"},
+    {"model": "SM-F731U", "version": "13"},
+    {"model": "SM-S906U", "version": "14"},
+    {"model": "SM-A536U", "version": "14"},
+    {"model": "SM-A356U1", "version": "14"},
+    {"model": "SM-S911U", "version": "14"},
+    {"model": "SM-S901U", "version": "14"},
+    {"model": "SM-S926U", "version": "14"},
+    {"model": "SM-A037U", "version": "13"},
+    {"model": "SM-G975U1", "version": "12"},
+    {"model": "SM-G980U1", "version": "13"},
+    {"model": "SM-G985U1", "version": "13"},
+    {"model": "SM-G988U1", "version": "13"},
+    {"model": "SM-G991U1", "version": "14"},
+    {"model": "SM-G996U1", "version": "13"},
+    {"model": "SM-G998U1", "version": "14"},
+    {"model": "SM-S931U1", "version": "15"},
+    {"model": "SM-S936U1", "version": "15"},
+    {"model": "SM-S938U1", "version": "15"},
+    {"model": "SM-N960U1", "version": "10"},
+    {"model": "SM-N970U1", "version": "12"},
+    {"model": "SM-N975U1", "version": "12"},
+    {"model": "SM-N980U1", "version": "13"},
+    {"model": "SM-N986U1", "version": "13"},
+    {"model": "SM-A105U1", "version": "11"},
+    {"model": "SM-A205U1", "version": "11"},
+    {"model": "SM-A505U1", "version": "11"},
+    {"model": "SM-A715U1", "version": "14"},
+    {"model": "SM-A515U1", "version": "14"},
+    {"model": "SM-F926U1", "version": "14"},
+    {"model": "SM-F936U1", "version": "14"},
+    {"model": "SM-F711U1", "version": "14"},
+    {"model": "SM-A546V", "version": "14"},
+    {"model": "SM-T220", "version": "14"},
+    {"model": "SM-A536V", "version": "14"},
+    {"model": "SM-A127M", "version": "13"},
+    {"model": "SM-S134DL", "version": "13"},
+    {"model": "SM-A136U", "version": "11"},
+    {"model": "SM-G970U", "version": "12"},
+    {"model": "SM-S146VL", "version": "14"},
+    {"model": "Pixel 6a", "version": "13"},
+    {"model": "Pixel 6 Pro", "version": "14"},
+    {"model": "Pixel 7", "version": "14"},
+    {"model": "Pixel 7 Pro", "version": "15"},
+    {"model": "Pixel 8", "version": "15"},
+    {"model": "Pixel 8 Pro", "version": "15"},
+    {"model": "Pixel 8a", "version": "15"},
+    {"model": "Pixel 9", "version": "16"},
+    {"model": "Pixel 9 Pro", "version": "16"},
+    {"model": "Pixel 10", "version": "16"},
+    {"model": "moto g stylus 6G", "version": "13"},
+    {"model": "moto g power 2024", "version": "14"},
+    {"model": "moto g pure 2025", "version": "15"},
+    {"model": "moto g stylus 2024", "version": "14"},
+    {"model": "moto g 5G plus 2023", "version": "14"},
+    {"model": "moto g 5G lite", "version": "13"},
+    {"model": "moto g100", "version": "14"},
+    {"model": "moto g200", "version": "15"},
+    {"model": "moto g71", "version": "14"},
+    {"model": "moto g82", "version": "14"},
+    {"model": "OnePlus 11", "version": "15"},
+    {"model": "OnePlus 12", "version": "15"},
+    {"model": "OnePlus 12T", "version": "15"},
+    {"model": "OnePlus Nord 3", "version": "14"},
+    {"model": "OnePlus Nord CE 3", "version": "14"},
+    {"model": "OnePlus 12 Pro", "version": "15"},
+    {"model": "OnePlus 13", "version": "16"},
+    {"model": "OnePlus 13 Pro", "version": "16"},
+    {"model": "OnePlus 14", "version": "16"},
+    {"model": "OnePlus 14 Pro", "version": "16"},
+    {"model": "Xiaomi 13", "version": "15"},
+    {"model": "Xiaomi 13 Pro", "version": "15"},
+    {"model": "Xiaomi 14", "version": "16"},
+    {"model": "Xiaomi 14 Pro", "version": "16"},
+    {"model": "Xiaomi 14 Ultra", "version": "16"},
+    {"model": "Xiaomi 15", "version": "16"},
+    {"model": "Xiaomi 15 Pro", "version": "16"},
+    {"model": "Xiaomi 15 Ultra", "version": "16"},
+    {"model": "Redmi Note 13", "version": "15"},
+    {"model": "Redmi Note 13 Pro", "version": "15"},
+    {"model": "Realme GT3", "version": "15"},
+    {"model": "Realme GT5 Pro", "version": "15"},
+    {"model": "Realme 12", "version": "16"},
+    {"model": "Realme 12 Pro", "version": "16"},
+    {"model": "Realme X5 Max", "version": "15"},
+    {"model": "Realme X5 Pro", "version": "15"},
+    {"model": "Realme GT Neo 4", "version": "16"},
+    {"model": "Realme GT Neo 5", "version": "16"},
+    {"model": "Realme Narzo 60", "version": "15"},
+    {"model": "Realme Narzo 60 Pro", "version": "15"},
+    {"model": "Nothing Phone 1", "version": "13"},
+    {"model": "Nothing Phone 2", "version": "15"},
+    {"model": "Nothing Phone 3", "version": "16"},
+    {"model": "Nothing Phone 4", "version": "16"},
+    {"model": "Nothing Phone 5", "version": "16"},
+    {"model": "Nothing Phone 6", "version": "16"},
+    {"model": "Nothing Phone X", "version": "15"},
+    {"model": "Nothing Phone XR", "version": "15"},
+    {"model": "Nothing Phone 2 Pro", "version": "16"},
+    {"model": "Nothing Phone 3 Pro", "version": "16"},
+    {"model": "Asus ROG Phone 6", "version": "15"},
+    {"model": "Asus ROG Phone 6 Pro", "version": "15"},
+    {"model": "Asus ROG Phone 7", "version": "16"},
+    {"model": "Asus ROG Phone 7 Pro", "version": "16"},
+    {"model": "Asus Zenfone 10", "version": "16"},
+    {"model": "Asus Zenfone 10 Pro", "version": "16"},
+    {"model": "Asus ROG Phone 8", "version": "16"},
+    {"model": "Asus ROG Phone 8 Pro", "version": "16"},
+    {"model": "Asus ROG Phone 9", "version": "16"},
+    {"model": "Asus ROG Phone 9 Pro", "version": "16"}
+];
+    const androidBuilds = {
+        "10":"QP1A.190711.020; wv",
+        "11":"RP1A.200720.012; wv",
+        "12":"SP1A.210812.016; wv",
+        "13":"TP1A.220624.014; wv",
+        "14":"UP1A.231005.007; wv",
+        "15":"VP1A.240322.001; wv",
+        "16":"WP1A.250801.001; wv"
+    };
+    const fbVersions = ["526.1.0.66.75","525.0.0.53.51","524.0.0.52.44","527.0.0.13.76","528.0.0.0.8"];
+    const ifbVersions = ['520','521','522','523'];
+
+    // iPhone Devices + Versions
+    const iosDevices = [
+    "iPhone12,1", "iPhone12,3", "iPhone12,5",
+    "iPhone13,1", "iPhone13,2", "iPhone13,3", "iPhone13,4",
+    "iPhone14,4", "iPhone14,5", "iPhone14,2", "iPhone14,3",
+    "iPhone14,7", "iPhone14,8", "iPhone15,2", "iPhone15,3",
+    "iPhone16,1", "iPhone16,2", "iPhone16,3", "iPhone16,4",
+    "iPhone17,1", "iPhone17,2", "iPhone17,3", 
+    "iPhone18,1", "iPhone18,2", "iPhone18,3" 
+];
+    const iosVersions = ["17.0", "17.1", "17.2", "17.3", "17.4", "17.5", "18.0", "18.1", "18.2", "18.3", "18.4", "18.5"];
+    const buildad = ['22E252', '22D68', '22F76', '22B5079b']
+
+    // Random choice helper
+    function randomChoice(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+    let ua = 'Mozilla/5.0 (';
+    if(deviceType==='android'){
+        const dev = randomChoice(androidDevices);
+        const build = androidBuilds[dev.version];
+        const fbav = randomChoice(fbVersions);
+        ua += `Linux; Android ${dev.version}; ${dev.model} Build/${build}) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/138.0.7204.157 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/${fbav};IABMV/1;]`;
+    } else if(deviceType==='ios'){
+       const dev = randomChoice(iosDevices);
+const version = randomChoice(iosVersions);
+const fbav1 = randomChoice(ifbVersions); // FB version
+const fbav = `${fbav1}.0.0.${Math.floor(Math.random()*21 + 20)}.${Math.floor(Math.random()*151 + 100)}`;
+const fbbv = Math.floor(Math.random() * 200000000 + 800000000);
+const fbrv = Math.floor(Math.random() * 200000000 + 700000000);
+const build = randomChoice(buildad);
+        ua += `iPhone; CPU iPhone OS ${version.replace('.','_')} like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/${build} [FBAN/FBIOS;FBAV/${fbav};FBBV/${fbbv};FBDV/${dev};FBMD/iPhone;FBSN/iOS;FBSV/${version};FBSS/3;FBID/phone;FBLC/en_US;FBOP/5;FBRV/${fbrv};IABMV/1]`;
+    }
+    return ua;
+}
+
+// Generate multiple UAs
+function generateUserAgent(){
+    const deviceType = document.getElementById('deviceType').value;
+    const count = parseInt(document.getElementById('uaCount').value);
+    const agents = [];
+    for(let i=0;i<count;i++){
+        let type = deviceType;
+        if(type==='random'){
+            type = Math.random()>0.5?'android':'ios';
+        }
+        agents.push(randomUA(type));
+    }
+    document.getElementById('userAgentResult').innerText = agents.join('\n\n');
+}
+
+function copyUserAgent() {
+    const resultEl = document.getElementById('userAgentResult');
+
+    // Get clean text line by line
+    const text = resultEl.innerText
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line)
+        .join('\n');
+  
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Copied to clipboard!');});
+}
+
+function clearUserAgent(){
+    document.getElementById('userAgentResult').innerText = '';
+    showToast('Done')
+}
+// Save Result line by line
+
+function saveResult(elementId, type) {
+    const resultEl = document.getElementById(elementId);
+
+    // Get text, split by real line breaks, trim empty lines
+    const lines = resultEl.innerText
+        .split('\n')         // real line breaks
+        .map(line => line.trim()) // remove extra spaces
+        .filter(line => line);    // remove empty lines
+
+    const resultText = lines.join('\n');
+
+    const blob = new Blob([resultText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${type}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
+}
+
+
+</script>
+
+</body>
+</html>
